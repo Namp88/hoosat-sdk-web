@@ -1,3 +1,14 @@
+export interface Transaction {
+  version: number;
+  inputs: TransactionInput[];
+  outputs: TransactionOutput[];
+  lockTime: string;
+  subnetworkId: string;
+  gas: string;
+  payload: string;
+  fee?: string; // Optional (for TxBuilder)
+}
+
 export interface TransactionInput {
   previousOutpoint: {
     transactionId: string;
@@ -15,17 +26,6 @@ export interface TransactionOutput {
     version: number;
     scriptPublicKey: string;
   };
-}
-
-export interface Transaction {
-  version: number;
-  inputs: TransactionInput[];
-  outputs: TransactionOutput[];
-  lockTime: string;
-  subnetworkId: string;
-  gas: string;
-  payload: string;
-  fee?: string; // Optional (for TxBuilder)
 }
 
 export interface UtxoEntry {

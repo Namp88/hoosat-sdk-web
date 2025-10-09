@@ -14,48 +14,32 @@ if (typeof globalThis !== 'undefined') {
   }
 }
 
-// Core crypto module (browser version)
-export { HoosatCrypto } from '@crypto/crypto-browser';
-export type { KeyPair, TransactionSignature } from '@crypto/crypto.types';
+export { HoosatCrypto } from '@crypto/crypto-web';
+export type { KeyPair, TransactionSignature } from '@crypto/crypto-web.types';
 
-// Browser API client (NEW!)
-export { HoosatBrowserClient } from '@client/browser-client';
+export { HoosatBrowserClient } from '@client/client-web';
 export type {
   ApiResponse,
   AddressBalance,
   AddressUtxos,
   TransactionSubmission,
-  TransactionInfo,
   NetworkInfo,
-  BlockTip,
-  TransactionHistory,
   FeeRecommendation,
   BrowserClientConfig,
   RequestOptions,
-} from '@client/browser-client.types';
+} from '@client/client-web.types';
+export { PriorityFee } from '@client/client-web.types';
 
-// Transaction builder (works with browser crypto)
 export { HoosatTxBuilder } from '@transaction/tx-builder';
 export type { TxBuilderOptions } from '@transaction/tx-builder.types';
 
-// Utilities (pure JS, works in browser)
 export { HoosatUtils } from '@utils/utils';
 
-// QR code generator (browser-compatible)
-export { HoosatQR } from '@qr/qr';
-export type { PaymentURIParams, QRCodeOptions, ParsedPaymentURI } from '@qr/qr.types';
+export { HoosatQR } from '@qr/qr-web';
+export type { PaymentURIParams, QRCodeOptions, ParsedPaymentURI } from '@qr/qr-web.types';
 
-// Constants
 export { HOOSAT_PARAMS } from '@constants/hoosat-params.const';
 export { HOOSAT_MASS } from '@constants/hoosat-mass.const';
 
-// Types
 export type { Transaction, TransactionInput, TransactionOutput, UtxoEntry, UtxoForSigning } from '@models/transaction.types';
 export type { HoosatNetwork } from '@models/network.type';
-
-// Note: The following modules are NOT included in browser build:
-// - HoosatClient (requires gRPC, Node.js only)
-// - HoosatEventManager (requires gRPC streaming, Node.js only)
-// - HoosatFeeEstimator (depends on HoosatClient)
-//
-// Instead, use HoosatBrowserClient for REST API access.

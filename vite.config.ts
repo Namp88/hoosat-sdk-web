@@ -26,6 +26,7 @@ export default defineConfig({
   },
   resolve: {
     alias: {
+      '@client': resolve(__dirname, 'src/client'), // 👈 ДОБАВЛЕНО!
       '@crypto': resolve(__dirname, 'src/crypto'),
       '@transaction': resolve(__dirname, 'src/transaction'),
       '@utils': resolve(__dirname, 'src/utils'),

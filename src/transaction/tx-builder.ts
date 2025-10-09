@@ -1,9 +1,9 @@
-import { HoosatCrypto } from '@crypto/crypto-browser';
 import { HOOSAT_PARAMS } from '@constants/hoosat-params.const';
 import { HoosatUtils } from '@utils/utils';
 import { Transaction, TransactionOutput, UtxoForSigning } from '@models/transaction.types';
-import { SighashReusedValues } from '@crypto/crypto.types';
 import { TxBuilderOptions } from '@transaction/tx-builder.types';
+import { SighashReusedValues } from '@crypto/crypto-web.types';
+import { HoosatCrypto } from '@crypto/crypto-web';
 
 /**
  * Builder class for creating and signing Hoosat transactions

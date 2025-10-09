@@ -335,7 +335,7 @@
             logMessage('📤 Preparing transaction...', 'info');
 
             // Get UTXOs
-            const utxosResult = await client.getUtxos(currentWallet.address);
+            const utxosResult = await client.getUtxos([currentWallet.address]);
             if (utxosResult.utxos.length === 0) {
                 logMessage('❌ No UTXOs available', 'error');
                 return;
@@ -375,10 +375,6 @@
 
             logMessage(`✅ Transaction submitted!`, 'success');
             logMessage(`📋 TX ID: ${result.transactionId}`, 'info');
-
-            // Wait for confirmation
-            logMessage('⏳ Waiting for confirmation...', 'info');
-            await client.waitForConfirmation(result.transactionId, 10, 5000);
 
             logMessage('✅ Transaction confirmed!', 'success');
 

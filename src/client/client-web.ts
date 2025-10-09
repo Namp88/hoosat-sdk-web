@@ -3,14 +3,11 @@ import type {
   AddressBalance,
   AddressUtxos,
   TransactionSubmission,
-  TransactionInfo,
   NetworkInfo,
-  BlockTip,
-  TransactionHistory,
   FeeRecommendation,
   BrowserClientConfig,
   RequestOptions,
-} from './browser-client.types';
+} from './client-web.types';
 import type { Transaction } from '@models/transaction.types';
 
 /**
@@ -35,10 +32,10 @@ import type { Transaction } from '@models/transaction.types';
  * ```
  */
 export class HoosatBrowserClient {
-  private readonly baseUrl: string;
-  private readonly timeout: number;
-  private readonly headers: Record<string, string>;
-  private readonly debug: boolean;
+  private readonly _baseUrl: string;
+  private readonly _timeout: number;
+  private readonly _headers: Record<string, string>;
+  private readonly _debug: boolean;
 
   /**
    * Creates a new HoosatBrowserClient instance
@@ -50,13 +47,13 @@ export class HoosatBrowserClient {
    * @param config.debug - Enable debug logging (default: false)
    */
   constructor(config: BrowserClientConfig) {
-    this.baseUrl = config.baseUrl.replace(/\/$/, ''); // Remove trailing slash
-    this.timeout = config.timeout || 30000;
-    this.headers = {
+    this._baseUrl = config.baseUrl.replace(/\/$/, ''); // Remove trailing slash
+    this._timeout = config.timeout || 30000;
+    this._headers = {
       'Content-Type': 'application/json',
       ...config.headers,
     };
-    this.debug = config.debug || false;
+    this._debug = config.debug || false;
   }
 
   // ==================== PRIVATE HELPERS ====================
@@ -66,10 +63,10 @@ export class HoosatBrowserClient {
    * @private
    */
   private async request<T>(endpoint: string, options: RequestInit & RequestOptions = {}): Promise<T> {
-    const url = `${this.baseUrl}${endpoint}`;
-    const timeout = options.timeout || this.timeout;
+    const url = `${this._baseUrl}${endpoint}`;
+    const timeout = options.timeout || this._timeout;
 
-    if (this.debug) {
+    if (this._debug) {
       console.log(`[HoosatBrowserClient] ${options.method || 'GET'} ${url}`);
       if (options.body) {
         console.log('[HoosatBrowserClient] Request body:', options.body);
@@ -84,7 +81,7 @@ export class HoosatBrowserClient {
       const response = await fetch(url, {
         ...options,
         headers: {
-          ...this.headers,
+          ...this._headers,
           ...options.headers,
         },
         signal: controller.signal,
@@ -95,7 +92,7 @@ export class HoosatBrowserClient {
       // Parse response
       const data: ApiResponse<T> = (await response.json()) as ApiResponse<T>;
 
-      if (this.debug) {
+      if (this._debug) {
         console.log('[HoosatBrowserClient] Response:', data);
       }
 
@@ -116,7 +113,7 @@ export class HoosatBrowserClient {
         throw new Error(`Request timeout after ${timeout}ms`);
       }
 
-      if (this.debug) {
+      if (this._debug) {
         console.error('[HoosatBrowserClient] Error:', error);
       }
 
@@ -143,52 +140,49 @@ export class HoosatBrowserClient {
     return this.request<AddressBalance>(`/address/${address}/balance`);
   }
 
-  /**
-   * Get balances for multiple addresses
-   *
-   * @param addresses - Array of Hoosat addresses
-   * @returns Balance information for each address
-   *
-   * @example
-   * ```typescript
-   * const balances = await client.getBalances(['hoosat:qz7ulu...', 'hoosat:qyp...']);
-   * balances.forEach(b => {
-   *   console.log(`${b.address}: ${b.balance} sompi`);
-   * });
-   * ```
-   */
-  async getBalances(addresses: string[]): Promise<any> {
-    return this.request<any>('/address/balances', {
-      method: 'POST',
-      body: JSON.stringify({ addresses }),
-    });
-  }
+    /**
+     * Get UTXOs for Hoosat addresses
+     * Required for building transactions
+     *
+     * @param addresses - Array of Hoosat addresses
+     * @returns List of unspent transaction outputs
+     *
+     * @example
+     * ```typescript
+     * const utxos = await client.getUtxos(['hoosat:qz7ulu...']);
+     * console.log(`Found ${utxos.utxos.length} UTXOs`);
+     *
+     * // Use with HoosatTxBuilder
+     * const builder = new HoosatTxBuilder();
+     * utxos.utxos.forEach(utxo => {
+     *   builder.addInput(utxo, privateKey);
+     * });
+     * ```
+     */
+    async getUtxos(addresses: string[]): Promise<AddressUtxos> {
+        const response = await this.request<any>('/address/utxos', {
+            method: 'POST',
+            body: JSON.stringify({ addresses }),
+        });
 
-  /**
-   * Get UTXOs for Hoosat addresses
-   * Required for building transactions
-   *
-   * @param addresses - Array of Hoosat addresses
-   * @returns List of unspent transaction outputs
-   *
-   * @example
-   * ```typescript
-   * const utxos = await client.getUtxos(['hoosat:qz7ulu...']);
-   * console.log(`Found ${utxos.utxos.length} UTXOs`);
-   *
-   * // Use with HoosatTxBuilder
-   * const builder = new HoosatTxBuilder();
-   * utxos.utxos.forEach(utxo => {
-   *   builder.addInput(utxo, privateKey);
-   * });
-   * ```
-   */
-  async getUtxos(addresses: string[]): Promise<AddressUtxos> {
-    return this.request<AddressUtxos>('/address/utxos', {
-      method: 'POST',
-      body: JSON.stringify({ addresses }),
-    });
-  }
+        // Adapt API response to TxBuilder format
+        // API returns: scriptPublicKey.scriptPublicKey
+        // TxBuilder expects: scriptPublicKey.script
+        if (response.utxos) {
+            response.utxos = response.utxos.map((utxo: any) => ({
+                ...utxo,
+                utxoEntry: {
+                    ...utxo.utxoEntry,
+                    scriptPublicKey: {
+                        version: utxo.utxoEntry.scriptPublicKey.version,
+                        script: utxo.utxoEntry.scriptPublicKey.scriptPublicKey, // Rename field
+                    },
+                },
+            }));
+        }
+
+        return response;
+    }
 
   // ==================== TRANSACTION METHODS ====================
 
@@ -233,23 +227,7 @@ export class HoosatBrowserClient {
    * ```
    */
   async getNetworkInfo(): Promise<NetworkInfo> {
-    return this.request<NetworkInfo>('/network/info');
-  }
-
-  /**
-   * Get latest block information
-   *
-   * @returns Latest block tip details
-   *
-   * @example
-   * ```typescript
-   * const tip = await client.getBlockTip();
-   * console.log(`Latest block: ${tip.hash}`);
-   * console.log(`Height: ${tip.height}`);
-   * ```
-   */
-  async getBlockTip(): Promise<BlockTip> {
-    return this.request<BlockTip>('/blockchain/tip-hash');
+    return this.request<NetworkInfo>('/node/info');
   }
 
   /**
@@ -259,14 +237,14 @@ export class HoosatBrowserClient {
    *
    * @example
    * ```typescript
-   * const fees = await client.getFeeRecommendation();
+   * const fees = await client.getFeeEstimate();
    * console.log(`Normal fee: ${fees.medium} sompi/byte`);
    *
    * // Use with HoosatCrypto.calculateFee()
    * const fee = HoosatCrypto.calculateFee(inputCount, outputCount, fees.medium);
    * ```
    */
-  async getFeeRecommendation(): Promise<FeeRecommendation> {
+  async getFeeEstimate(): Promise<FeeRecommendation> {
     return this.request<FeeRecommendation>('/mempool/fee-estimate');
   }
 
@@ -301,10 +279,10 @@ export class HoosatBrowserClient {
    */
   getConfig(): BrowserClientConfig {
     return {
-      baseUrl: this.baseUrl,
-      timeout: this.timeout,
-      headers: { ...this.headers },
-      debug: this.debug,
+      baseUrl: this._baseUrl,
+      timeout: this._timeout,
+      headers: { ...this._headers },
+      debug: this._debug,
     };
   }
 }

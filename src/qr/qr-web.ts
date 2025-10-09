@@ -1,6 +1,6 @@
 import QRCode from 'qrcode';
 import { HoosatUtils } from '@utils/utils';
-import { ParsedPaymentURI, PaymentURIParams, QRCodeOptions } from '@qr/qr.types';
+import { ParsedPaymentURI, PaymentURIParams, QRCodeOptions } from '@qr/qr-web.types';
 
 /**
  * QR Code generator and parser for Hoosat addresses and payment URIs

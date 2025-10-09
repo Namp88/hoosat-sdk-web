@@ -13,9 +13,9 @@
   },
   "exports": {
     ".": {
+      "types": "./dist/index.d.ts",
       "import": "./dist/hoosat-sdk.es.js",
-      "require": "./dist/hoosat-sdk.umd.js",
-      "types": "./dist/index.d.ts"
+      "require": "./dist/hoosat-sdk.umd.js"
     }
   },
   "keywords": [

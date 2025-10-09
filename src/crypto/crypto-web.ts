@@ -1,13 +1,21 @@
-import { getPublicKey, sign, verify, utils, Signature } from '@noble/secp256k1';
+import { getPublicKey, sign, verify, utils, etc, Signature } from '@noble/secp256k1';
 import { sha256 } from '@noble/hashes/sha256';
+import { hmac } from '@noble/hashes/hmac';
 import { blake3 } from '@noble/hashes/blake3';
 import { Buffer } from 'buffer';
 import * as bech32Hoosat from '@libs/bech32-hoosat';
 import { HOOSAT_PARAMS } from '@constants/hoosat-params.const';
 import { Transaction, UtxoForSigning } from '@models/transaction.types';
-import { KeyPair, SighashReusedValues, TransactionSignature } from '@crypto/crypto.types';
+import { KeyPair, SighashReusedValues, TransactionSignature } from '@crypto/crypto-web.types';
 import { HOOSAT_MASS } from '@constants/hoosat-mass.const';
 import { HoosatNetwork } from '@models/network.type';
+
+// Initialize HMAC for secp256k1 (required for deterministic signatures in browser)
+etc.hmacSha256Sync = (key: Uint8Array, ...messages: Uint8Array[]) => {
+  const h = hmac.create(sha256, key);
+  messages.forEach(msg => h.update(msg));
+  return h.digest();
+};
 
 /**
  * Browser-compatible cryptography implementation for Hoosat blockchain
