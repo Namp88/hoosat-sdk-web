@@ -1,0 +1,24 @@
+{
+  "types": [
+    { "type": "feat", "section": "✨ Features" },
+    { "type": "fix", "section": "🐛 Bug Fixes" },
+    { "type": "perf", "section": "⚡ Performance Improvements" },
+    { "type": "refactor", "section": "♻️ Code Refactoring" },
+    { "type": "docs", "section": "📝 Documentation" },
+    { "type": "test", "section": "✅ Tests" },
+    { "type": "build", "section": "🔨 Build System" },
+    { "type": "ci", "section": "👷 CI/CD" },
+    { "type": "chore", "hidden": true },
+    { "type": "style", "hidden": true }
+  ],
+  "commitUrlFormat": "https://github.com/Namp88/hoosat-sdk/commit/{{hash}}",
+  "compareUrlFormat": "https://github.com/Namp88/hoosat-sdk/compare/{{previousTag}}...{{currentTag}}",
+  "issueUrlFormat": "https://github.com/Namp88/hoosat-sdk/issues/{{id}}",
+  "userUrlFormat": "https://github.com/{{user}}",
+  "releaseCommitMessageFormat": "chore(release): {{currentTag}}",
+  "issuePrefixes": ["#"],
+  "header": "# Changelog\n\nAll notable changes to this project will be documented in this file.\n\n",
+  "scripts": {
+    "postchangelog": "prettier --write CHANGELOG.md"
+  }
+}

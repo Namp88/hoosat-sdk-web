@@ -1,0 +1,12 @@
+# .npmignore
+src/
+examples/
+tests/
+.github/
+*.ts
+tsconfig.json
+.gitignore
+.prettierrc
+node_modules/
+*.log
+.DS_Store

@@ -1,0 +1,431 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hoosat Browser Wallet Example</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        .header h1 {
+            font-size: 32px;
+            margin-bottom: 10px;
+        }
+        .content {
+            padding: 30px;
+        }
+        .section {
+            margin-bottom: 30px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 12px;
+        }
+        .section h2 {
+            color: #667eea;
+            margin-bottom: 15px;
+            font-size: 20px;
+        }
+        .wallet-info {
+            background: #e7e9fc;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+        }
+        .wallet-info label {
+            font-weight: 600;
+            color: #4a5568;
+            display: block;
+            margin-bottom: 5px;
+            font-size: 12px;
+            text-transform: uppercase;
+        }
+        .wallet-info .value {
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            color: #2d3748;
+            word-break: break-all;
+            padding: 8px;
+            background: white;
+            border-radius: 4px;
+            border: 1px solid #cbd5e0;
+        }
+        button {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            transition: all 0.2s;
+            margin: 5px 5px 5px 0;
+        }
+        button:hover {
+            background: #5a67d8;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+        button:active {
+            transform: translateY(0);
+        }
+        button:disabled {
+            background: #cbd5e0;
+            cursor: not-allowed;
+            transform: none;
+        }
+        .log {
+            background: #1a202c;
+            color: #e2e8f0;
+            padding: 15px;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            max-height: 300px;
+            overflow-y: auto;
+            line-height: 1.6;
+        }
+        .log .success { color: #48bb78; }
+        .log .error { color: #f56565; }
+        .log .info { color: #4299e1; }
+        .log .warning { color: #ed8936; }
+        .input-group {
+            margin-bottom: 15px;
+        }
+        .input-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #4a5568;
+        }
+        .input-group input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 14px;
+            font-family: 'Courier New', monospace;
+            transition: border-color 0.2s;
+        }
+        .input-group input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        .balance {
+            font-size: 36px;
+            font-weight: 700;
+            color: #667eea;
+            text-align: center;
+            padding: 20px;
+            background: white;
+            border-radius: 12px;
+            margin: 15px 0;
+        }
+        .balance small {
+            font-size: 14px;
+            color: #718096;
+            display: block;
+            margin-top: 5px;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="header">
+        <h1>🚀 Hoosat Browser Wallet</h1>
+        <p>Complete wallet example with HoosatBrowserClient</p>
+    </div>
+
+    <div class="content">
+        <!-- Wallet Section -->
+        <div class="section">
+            <h2>💼 Wallet</h2>
+            <button id="btnGenerate">Generate New Wallet</button>
+            <button id="btnImport">Import Wallet</button>
+
+            <div id="walletInfo" style="display:none; margin-top:20px;">
+                <div class="wallet-info">
+                    <label>Address</label>
+                    <div class="value" id="address"></div>
+                </div>
+                <div class="wallet-info">
+                    <label>Private Key (Keep Secret!)</label>
+                    <div class="value" id="privateKey"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Balance Section -->
+        <div class="section">
+            <h2>💰 Balance</h2>
+            <button id="btnCheckBalance" disabled>Check Balance</button>
+            <div class="balance" id="balanceDisplay" style="display:none;">
+                <div id="balanceAmount">0.00000000</div>
+                <small>HTN</small>
+            </div>
+        </div>
+
+        <!-- Send Section -->
+        <div class="section">
+            <h2>📤 Send Transaction</h2>
+            <div class="input-group">
+                <label>Recipient Address</label>
+                <input type="text" id="recipientAddress" placeholder="hoosat:q..." />
+            </div>
+            <div class="input-group">
+                <label>Amount (HTN)</label>
+                <input type="number" id="amount" placeholder="0.00000000" step="0.00000001" />
+            </div>
+            <button id="btnSend" disabled>Send HTN</button>
+        </div>
+
+        <!-- Network Info Section -->
+        <div class="section">
+            <h2>🌐 Network Info</h2>
+            <button id="btnNetworkInfo">Get Network Info</button>
+            <div id="networkInfo" style="margin-top:15px;"></div>
+        </div>
+
+        <!-- Log Section -->
+        <div class="section">
+            <h2>📋 Activity Log</h2>
+            <button id="btnClearLog" style="background:#718096;">Clear Log</button>
+            <div class="log" id="log">Ready...</div>
+        </div>
+    </div>
+</div>
+
+<script type="module">
+    import {
+        HoosatCrypto,
+        HoosatUtils,
+        HoosatTxBuilder,
+        HoosatBrowserClient,
+    } from './dist/hoosat-sdk.es.js';
+
+    // Initialize API client
+    const client = new HoosatBrowserClient({
+        baseUrl: 'https://proxy.hoosat.net/api/v1',
+        timeout: 30000,
+        debug: true
+    });
+
+    // Current wallet state
+    let currentWallet = null;
+
+    // DOM elements
+    const log = document.getElementById('log');
+    const walletInfo = document.getElementById('walletInfo');
+    const address = document.getElementById('address');
+    const privateKey = document.getElementById('privateKey');
+    const balanceDisplay = document.getElementById('balanceDisplay');
+    const balanceAmount = document.getElementById('balanceAmount');
+    const btnCheckBalance = document.getElementById('btnCheckBalance');
+    const btnSend = document.getElementById('btnSend');
+
+    // Logging functions
+    function logMessage(message, type = 'info') {
+        const timestamp = new Date().toLocaleTimeString();
+        const colorClass = type;
+        log.innerHTML += `<div class="${colorClass}">[${timestamp}] ${message}</div>`;
+        log.scrollTop = log.scrollHeight;
+    }
+
+    function clearLog() {
+        log.innerHTML = 'Ready...';
+    }
+
+    // Generate new wallet
+    document.getElementById('btnGenerate').addEventListener('click', () => {
+        try {
+            logMessage('🔑 Generating new wallet...', 'info');
+            currentWallet = HoosatCrypto.generateKeyPair('mainnet');
+
+            address.textContent = currentWallet.address;
+            privateKey.textContent = currentWallet.privateKey.toString('hex');
+            walletInfo.style.display = 'block';
+
+            btnCheckBalance.disabled = false;
+            btnSend.disabled = false;
+
+            logMessage('✅ Wallet generated successfully!', 'success');
+            logMessage(`📍 Address: ${currentWallet.address}`, 'info');
+        } catch (error) {
+            logMessage(`❌ Error: ${error.message}`, 'error');
+        }
+    });
+
+    // Import wallet
+    document.getElementById('btnImport').addEventListener('click', () => {
+        const privKeyHex = prompt('Enter private key (64 hex characters):');
+        if (!privKeyHex) return;
+
+        try {
+            logMessage('🔑 Importing wallet...', 'info');
+            currentWallet = HoosatCrypto.importKeyPair(privKeyHex, 'mainnet');
+
+            address.textContent = currentWallet.address;
+            privateKey.textContent = currentWallet.privateKey.toString('hex');
+            walletInfo.style.display = 'block';
+
+            btnCheckBalance.disabled = false;
+            btnSend.disabled = false;
+
+            logMessage('✅ Wallet imported successfully!', 'success');
+        } catch (error) {
+            logMessage(`❌ Import failed: ${error.message}`, 'error');
+        }
+    });
+
+    // Check balance
+    document.getElementById('btnCheckBalance').addEventListener('click', async () => {
+        if (!currentWallet) return;
+
+        try {
+            logMessage('💰 Checking balance...', 'info');
+
+            const result = await client.getBalance(currentWallet.address);
+            const htn = HoosatUtils.sompiToAmount(result.balance);
+
+            balanceAmount.textContent = htn;
+            balanceDisplay.style.display = 'block';
+
+            logMessage(`✅ Balance: ${htn} HTN (${result.balance} sompi)`, 'success');
+        } catch (error) {
+            logMessage(`❌ Failed to get balance: ${error.message}`, 'error');
+        }
+    });
+
+    // Send transaction
+    document.getElementById('btnSend').addEventListener('click', async () => {
+        if (!currentWallet) return;
+
+        const recipient = document.getElementById('recipientAddress').value;
+        const amount = document.getElementById('amount').value;
+
+        if (!recipient || !amount) {
+            logMessage('⚠️  Please fill in recipient and amount', 'warning');
+            return;
+        }
+
+        try {
+            logMessage('📤 Preparing transaction...', 'info');
+
+            // Get UTXOs
+            const utxosResult = await client.getUtxos(currentWallet.address);
+            if (utxosResult.utxos.length === 0) {
+                logMessage('❌ No UTXOs available', 'error');
+                return;
+            }
+
+            // Convert HTN to sompi
+            const amountSompi = HoosatUtils.amountToSompi(amount);
+
+            // Build transaction
+            const builder = new HoosatTxBuilder();
+
+            // Add inputs
+            for (const utxo of utxosResult.utxos) {
+                builder.addInput(utxo, currentWallet.privateKey);
+            }
+
+            // Add recipient output
+            builder.addOutput(recipient, amountSompi);
+
+            // Calculate fee
+            const estimatedFee = HoosatCrypto.calculateFee(
+                utxosResult.utxos.length,
+                2 // recipient + change
+            );
+            builder.setFee(estimatedFee);
+
+            // Add change output
+            builder.addChangeOutput(currentWallet.address);
+
+            // Sign and build
+            const signedTx = builder.sign();
+
+            logMessage('📡 Submitting transaction...', 'info');
+
+            // Submit
+            const result = await client.submitTransaction(signedTx);
+
+            logMessage(`✅ Transaction submitted!`, 'success');
+            logMessage(`📋 TX ID: ${result.transactionId}`, 'info');
+
+            // Wait for confirmation
+            logMessage('⏳ Waiting for confirmation...', 'info');
+            await client.waitForConfirmation(result.transactionId, 10, 5000);
+
+            logMessage('✅ Transaction confirmed!', 'success');
+
+        } catch (error) {
+            logMessage(`❌ Transaction failed: ${error.message}`, 'error');
+        }
+    });
+
+    // Get network info
+    document.getElementById('btnNetworkInfo').addEventListener('click', async () => {
+        try {
+            logMessage('🌐 Fetching network info...', 'info');
+
+            const info = await client.getNetworkInfo();
+            const tip = await client.getBlockTip();
+
+            document.getElementById('networkInfo').innerHTML = `
+                    <div class="wallet-info">
+                        <label>Network</label>
+                        <div class="value">${info.networkName}</div>
+                    </div>
+                    <div class="wallet-info">
+                        <label>Block Height</label>
+                        <div class="value">${info.blockCount}</div>
+                    </div>
+                    <div class="wallet-info">
+                        <label>Latest Block Hash</label>
+                        <div class="value">${tip.hash}</div>
+                    </div>
+                    <div class="wallet-info">
+                        <label>Synced</label>
+                        <div class="value">${info.isSynced ? '✅ Yes' : '⏳ Syncing...'}</div>
+                    </div>
+                `;
+
+            logMessage('✅ Network info retrieved', 'success');
+        } catch (error) {
+            logMessage(`❌ Failed to get network info: ${error.message}`, 'error');
+        }
+    });
+
+    // Clear log
+    document.getElementById('btnClearLog').addEventListener('click', clearLog);
+
+    // Initial log message
+    logMessage('🚀 Hoosat Browser Wallet ready!', 'success');
+    logMessage('💡 Generate or import a wallet to get started', 'info');
+</script>
+</body>
+</html>
