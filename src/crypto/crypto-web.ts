@@ -270,29 +270,43 @@ export class HoosatCrypto {
 
   /**
    * Calculates recommended transaction fee using MASS-BASED calculation
-   * This is the CORRECT method that accounts for ScriptPubKey mass
+   * Based on HTND implementation (util\txmass\calculator.go)
+   *
+   * Formula:
+   * 1. size = overhead + (inputs × inputSize) + (outputs × outputSize)
+   * 2. massForSize = size × 1
+   * 3. massForScriptPubKey = (outputs × scriptPubKeySize) × 10
+   * 4. massForSigOps = inputs × 1000
+   * 5. totalMass = massForSize + massForScriptPubKey + massForSigOps
+   * 6. fee = (totalMass × minimumRelayTxFee) / 1000
+   *    where minimumRelayTxFee = 1000, so fee = totalMass
    *
    * @param inputCount - Number of inputs
    * @param outputCount - Number of outputs
-   * @param feePerByte - Fee rate (default: 1 sompi/byte)
+   * @param feeRate - Fee rate in sompi/gram (default: 1)
    * @returns Fee amount in sompi as string
    *
    * @example
-   * const fee = HoosatCrypto.calculateFee(2, 2, 1);
+   * const fee = HoosatCrypto.calculateFee(5, 2, 1);
+   * // Returns: "7170" (for 5 inputs, 2 outputs at 1 sompi/gram)
    */
-  static calculateFee(inputCount: number, outputCount: number, feePerByte: number = HOOSAT_PARAMS.DEFAULT_FEE_PER_BYTE): string {
-    const txSize = HOOSAT_MASS.BaseTxOverhead + inputCount * HOOSAT_MASS.EstimatedInputSize;
+  static calculateFee(inputCount: number, outputCount: number, feeRate: number = HOOSAT_PARAMS.DEFAULT_FEE_PER_BYTE): string {
+    // 1. Calculate full transaction size (including inputs AND outputs)
+    const txSize = HOOSAT_MASS.BaseTxOverhead + inputCount * HOOSAT_MASS.EstimatedInputSize + outputCount * HOOSAT_MASS.EstimatedOutputSize;
+
+    // 2. Calculate script-only size for extra mass
+    // From HTND: version(2) + script(len)
     const scriptPubKeySize = outputCount * HOOSAT_MASS.ScriptPubKeyBytesPerOutput;
 
-    const baseMass = txSize * HOOSAT_MASS.MassPerTxByte;
-    const scriptPubKeyMass = scriptPubKeySize * HOOSAT_MASS.MassPerScriptPubKeyByte;
-    const sigOpsMass = inputCount * HOOSAT_MASS.MassPerSigOp;
+    // 3. Calculate mass components
+    const massForSize = txSize * HOOSAT_MASS.MassPerTxByte;
+    const massForScriptPubKey = scriptPubKeySize * HOOSAT_MASS.MassPerScriptPubKeyByte;
+    const massForSigOps = inputCount * HOOSAT_MASS.MassPerSigOp;
+    const totalMass = massForSize + massForScriptPubKey + massForSigOps;
 
-    const totalMass = baseMass + scriptPubKeyMass + sigOpsMass;
-    const equivalentSize = Math.ceil(totalMass / 10);
-
-    const calculatedFee = equivalentSize * feePerByte;
-    const fee = Math.max(calculatedFee, HOOSAT_PARAMS.MIN_FEE);
+    // 4. Calculate fee: (mass × minimumRelayTxFee) / 1000
+    // where minimumRelayTxFee = 1000, so: fee = mass × feeRate
+    const fee = totalMass * feeRate;
 
     return fee.toString();
   }
