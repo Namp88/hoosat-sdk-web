@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { HoosatTxBuilder } from '@transaction/tx-builder';
-import { HoosatCrypto } from '@crypto/crypto-browser';
+import { HoosatCrypto } from '@crypto/crypto-web';
 import type { UtxoForSigning } from '@models/transaction.types';
 
 // Helper to create mock UTXO

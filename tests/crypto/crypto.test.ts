@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { HoosatCrypto } from '@crypto/crypto-browser';
+import { HoosatCrypto } from '@crypto/crypto-web';
 import { HoosatUtils } from '@utils/utils';
 import type { Transaction, UtxoForSigning } from '@models/transaction.types';
 
