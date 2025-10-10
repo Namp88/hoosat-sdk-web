@@ -17,7 +17,7 @@ if (typeof globalThis !== 'undefined') {
 export { HoosatCrypto } from '@crypto/crypto-web';
 export type { KeyPair, TransactionSignature } from '@crypto/crypto-web.types';
 
-export { HoosatBrowserClient } from '@client/client-web';
+export { HoosatWebClient } from '@client/client-web';
 export type {
   ApiResponse,
   AddressBalance,

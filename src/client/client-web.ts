@@ -11,14 +11,14 @@ import type {
 import type { Transaction } from '@models/transaction.types';
 
 /**
- * HoosatBrowserClient - REST API client for browser-based Hoosat applications
+ * HoosatWebClient - REST API client for browser-based Hoosat applications
  *
  * Provides methods to interact with Hoosat blockchain via REST API proxy.
  * All methods return promises and handle errors gracefully.
  *
  * @example
  * ```typescript
- * const client = new HoosatBrowserClient({
+ * const client = new HoosatWebClient({
  *   baseUrl: 'https://proxy.hoosat.net/api/v1',
  *   timeout: 30000
  * });
@@ -31,14 +31,14 @@ import type { Transaction } from '@models/transaction.types';
  * const utxos = await client.getUtxos('hoosat:qz7ulu...');
  * ```
  */
-export class HoosatBrowserClient {
+export class HoosatWebClient {
   private readonly _baseUrl: string;
   private readonly _timeout: number;
   private readonly _headers: Record<string, string>;
   private readonly _debug: boolean;
 
   /**
-   * Creates a new HoosatBrowserClient instance
+   * Creates a new HoosatWebClient instance
    *
    * @param config - Client configuration
    * @param config.baseUrl - Base URL of the API (e.g., 'https://proxy.hoosat.net/api/v1')
@@ -67,9 +67,9 @@ export class HoosatBrowserClient {
     const timeout = options.timeout || this._timeout;
 
     if (this._debug) {
-      console.log(`[HoosatBrowserClient] ${options.method || 'GET'} ${url}`);
+      console.log(`[HoosatWebClient] ${options.method || 'GET'} ${url}`);
       if (options.body) {
-        console.log('[HoosatBrowserClient] Request body:', options.body);
+        console.log('[HoosatWebClient] Request body:', options.body);
       }
     }
 
@@ -93,7 +93,7 @@ export class HoosatBrowserClient {
       const data: ApiResponse<T> = (await response.json()) as ApiResponse<T>;
 
       if (this._debug) {
-        console.log('[HoosatBrowserClient] Response:', data);
+        console.log('[HoosatWebClient] Response:', data);
       }
 
       // Check API response format
@@ -114,7 +114,7 @@ export class HoosatBrowserClient {
       }
 
       if (this._debug) {
-        console.error('[HoosatBrowserClient] Error:', error);
+        console.error('[HoosatWebClient] Error:', error);
       }
 
       throw error;
@@ -140,49 +140,49 @@ export class HoosatBrowserClient {
     return this.request<AddressBalance>(`/address/${address}/balance`);
   }
 
-    /**
-     * Get UTXOs for Hoosat addresses
-     * Required for building transactions
-     *
-     * @param addresses - Array of Hoosat addresses
-     * @returns List of unspent transaction outputs
-     *
-     * @example
-     * ```typescript
-     * const utxos = await client.getUtxos(['hoosat:qz7ulu...']);
-     * console.log(`Found ${utxos.utxos.length} UTXOs`);
-     *
-     * // Use with HoosatTxBuilder
-     * const builder = new HoosatTxBuilder();
-     * utxos.utxos.forEach(utxo => {
-     *   builder.addInput(utxo, privateKey);
-     * });
-     * ```
-     */
-    async getUtxos(addresses: string[]): Promise<AddressUtxos> {
-        const response = await this.request<any>('/address/utxos', {
-            method: 'POST',
-            body: JSON.stringify({ addresses }),
-        });
+  /**
+   * Get UTXOs for Hoosat addresses
+   * Required for building transactions
+   *
+   * @param addresses - Array of Hoosat addresses
+   * @returns List of unspent transaction outputs
+   *
+   * @example
+   * ```typescript
+   * const utxos = await client.getUtxos(['hoosat:qz7ulu...']);
+   * console.log(`Found ${utxos.utxos.length} UTXOs`);
+   *
+   * // Use with HoosatTxBuilder
+   * const builder = new HoosatTxBuilder();
+   * utxos.utxos.forEach(utxo => {
+   *   builder.addInput(utxo, privateKey);
+   * });
+   * ```
+   */
+  async getUtxos(addresses: string[]): Promise<AddressUtxos> {
+    const response = await this.request<any>('/address/utxos', {
+      method: 'POST',
+      body: JSON.stringify({ addresses }),
+    });
 
-        // Adapt API response to TxBuilder format
-        // API returns: scriptPublicKey.scriptPublicKey
-        // TxBuilder expects: scriptPublicKey.script
-        if (response.utxos) {
-            response.utxos = response.utxos.map((utxo: any) => ({
-                ...utxo,
-                utxoEntry: {
-                    ...utxo.utxoEntry,
-                    scriptPublicKey: {
-                        version: utxo.utxoEntry.scriptPublicKey.version,
-                        script: utxo.utxoEntry.scriptPublicKey.scriptPublicKey, // Rename field
-                    },
-                },
-            }));
-        }
-
-        return response;
+    // Adapt API response to TxBuilder format
+    // API returns: scriptPublicKey.scriptPublicKey
+    // TxBuilder expects: scriptPublicKey.script
+    if (response.utxos) {
+      response.utxos = response.utxos.map((utxo: any) => ({
+        ...utxo,
+        utxoEntry: {
+          ...utxo.utxoEntry,
+          scriptPublicKey: {
+            version: utxo.utxoEntry.scriptPublicKey.version,
+            script: utxo.utxoEntry.scriptPublicKey.scriptPublicKey, // Rename field
+          },
+        },
+      }));
     }
+
+    return response;
+  }
 
   // ==================== TRANSACTION METHODS ====================
 
