@@ -1,7 +1,7 @@
 {
   "name": "hoosat-sdk-web",
   "version": "0.1.0",
-  "description": "Browser-compatible TypeScript SDK for Hoosat blockchain",
+  "description": "Browser-compatible TypeScript SDK for Hoosat blockchain - crypto, transactions, QR codes",
   "main": "dist/hoosat-sdk.umd.js",
   "module": "dist/hoosat-sdk.es.js",
   "types": "dist/index.d.ts",
@@ -9,7 +9,8 @@
     "build": "vite build",
     "build:watch": "vite build --watch",
     "test": "vitest",
-    "test:browser": "vitest --browser"
+    "test:browser": "vitest --browser",
+    "prepublishOnly": "npm run build"
   },
   "exports": {
     ".": {
@@ -20,13 +21,18 @@
   },
   "keywords": [
     "hoosat",
-    "browser",
-    "wallet",
-    "crypto",
     "blockchain",
-    "web3"
+    "crypto",
+    "wallet",
+    "browser",
+    "web3",
+    "cryptocurrency",
+    "transaction",
+    "ecdsa",
+    "secp256k1",
+    "qrcode"
   ],
-  "author": "Andrei Kliubchenko, namp2988@gmail.com",
+  "author": "Andrei Kliubchenko <namp2988@gmail.com>",
   "repository": {
     "type": "git",
     "url": "https://github.com/Namp88/hoosat-sdk-web.git"
@@ -35,6 +41,7 @@
     "url": "https://github.com/Namp88/hoosat-sdk-web/issues"
   },
   "homepage": "https://github.com/Namp88/hoosat-sdk-web#readme",
+  "license": "MIT",
   "files": [
     "dist",
     "README.md",

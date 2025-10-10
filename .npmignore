@@ -1,12 +1,34 @@
-# .npmignore
 src/
-examples/
 tests/
+examples/
+
+# Config files
 .github/
+.vscode/
+.idea/
 *.ts
 tsconfig.json
+vite.config.ts
+vitest.config.ts
 .gitignore
 .prettierrc
+.prettierignore
+.versionrc.json
+
+# Development files
 node_modules/
 *.log
 .DS_Store
+coverage/
+.env
+*.tgz
+
+# Test files
+test-browser.html
+example-wallet.html
+
+# Documentation
+docs/
+
+# Build artifacts
+*.map

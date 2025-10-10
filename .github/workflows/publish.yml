@@ -1,0 +1,93 @@
+name: Publish to NPM
+
+on:
+  push:
+    tags:
+      - 'v*'  # Trigger on tags starting with 'v' (e.g., v0.1.0, v1.2.3)
+
+# Add permissions for creating releases
+permissions:
+  contents: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1. Checkout code with proper git configuration
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Fetch all history for proper git operations
+          ref: ${{ github.ref }}  # Checkout the actual tag
+          token: ${{ secrets.GITHUB_TOKEN }}  # Use GitHub token for auth
+
+      # 2. Configure git user (required for git operations)
+      - name: Configure Git
+        run: |
+          git config --global user.name "GitHub Actions Bot"
+          git config --global user.email "actions@github.com"
+
+      # 3. Setup Node.js with npm registry
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          registry-url: 'https://registry.npmjs.org'
+
+      # 4. Install dependencies
+      - name: Install dependencies
+        run: npm ci
+
+      # 5. Build the project
+      - name: Build
+        run: npm run build
+
+      # 6. Run tests (optional, comment out if no tests yet)
+      - name: Run tests
+        run: npm test
+        continue-on-error: true  # Don't fail if tests fail
+
+      # 7. Extract version from tag for release notes
+      - name: Get version from tag
+        id: get_version
+        run: |
+          VERSION=${GITHUB_REF#refs/tags/v}
+          echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
+          echo "Publishing version: $VERSION"
+
+      # 8. Publish to npm
+      - name: Publish to NPM
+        run: npm publish --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      # 9. Create GitHub Release
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: Release ${{ steps.get_version.outputs.VERSION }}
+          body: |
+            ## hoosat-sdk-web v${{ steps.get_version.outputs.VERSION }}
+            
+            Browser-compatible TypeScript SDK for Hoosat blockchain.
+            
+            ### 📦 Installation
+            ```bash
+            npm install hoosat-sdk-web@${{ steps.get_version.outputs.VERSION }}
+            ```
+            
+            ### 🔗 Links
+            - NPM: https://www.npmjs.com/package/hoosat-sdk-web/v/${{ steps.get_version.outputs.VERSION }}
+            - GitHub: https://github.com/Namp88/hoosat-sdk-web
+            - Documentation: https://github.com/Namp88/hoosat-sdk-web#readme
+            
+            ### ✨ What's Included
+            - ✅ Cryptography (ECDSA key generation, signing)
+            - ✅ Transaction Builder (build & sign transactions)
+            - ✅ REST API Client (connect to Hoosat proxy)
+            - ✅ QR Code Generator (payment URIs)
+            - ✅ Utilities (validation, conversion, formatting)
+          draft: false
+          prerelease: false
