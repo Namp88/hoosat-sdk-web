@@ -10,7 +10,12 @@
     "build:watch": "vite build --watch",
     "test": "vitest",
     "test:browser": "vitest --browser",
-    "prepublishOnly": "npm run build"
+    "release:minor": "standard-version --release-as minor",
+    "release:major": "standard-version --release-as major",
+    "release:patch": "standard-version --release-as patch",
+    "release:first": "standard-version --first-release",
+    "release:dry": "standard-version --dry-run",
+    "push:tags": "git push --follow-tags origin master"
   },
   "exports": {
     ".": {
