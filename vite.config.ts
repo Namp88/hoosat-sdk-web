@@ -1,7 +1,14 @@
 import { defineConfig } from 'vite';
 import { resolve } from 'path';
+import dts from 'vite-plugin-dts';
 
 export default defineConfig({
+  plugins: [
+    dts({
+      insertTypesEntry: true,
+      rollupTypes: true,
+    }),
+  ],
   build: {
     lib: {
       entry: resolve(__dirname, 'src/index.ts'),
@@ -22,11 +29,11 @@ export default defineConfig({
     // Target modern browsers
     target: 'es2020',
     // Minify for production
-    minify: 'esbuild', // Use esbuild for faster builds, or 'terser' for better compression
+    minify: 'esbuild',
   },
   resolve: {
     alias: {
-      '@client': resolve(__dirname, 'src/client'), // 👈 ДОБАВЛЕНО!
+      '@client': resolve(__dirname, 'src/client'),
       '@crypto': resolve(__dirname, 'src/crypto'),
       '@transaction': resolve(__dirname, 'src/transaction'),
       '@utils': resolve(__dirname, 'src/utils'),
