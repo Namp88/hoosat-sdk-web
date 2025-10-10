@@ -21,11 +21,6 @@
 npm install hoosat-sdk-web
 ```
 
-Or with yarn:
-```bash
-yarn add hoosat-sdk-web
-```
-
 ## 🔧 Quick Start
 
 ### 1. Generate Wallet
