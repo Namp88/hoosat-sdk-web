@@ -14,7 +14,3 @@ All notable changes to this project will be documented in this file.
 ### 📝 Documentation
 
 - update package.json commands ([30db23b](https://github.com/Namp88/hoosat-sdk/commit/30db23bd43e5da4346fa3feca6c209fe5ea46dd0))
-
-# Changelog
-
-All notable changes to this project will be documented in this file.
