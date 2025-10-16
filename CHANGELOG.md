@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+### [0.1.4](https://github.com/Namp88/hoosat-sdk/compare/v0.1.3...v0.1.4) (2025-10-16)
+
+### ✨ Features
+
+- add message signing with ECDSA for DApp authentication ([60839cd](https://github.com/Namp88/hoosat-sdk/commit/60839cd9516b9aae159e4d83024801658b153b86))
+
 ### [0.1.3](https://github.com/Namp88/hoosat-sdk/compare/v0.1.2...v0.1.3) (2025-10-10)
 
 ### 📝 Documentation
