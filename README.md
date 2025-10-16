@@ -9,6 +9,7 @@
 
 - ✅ **Browser-native** - No Node.js dependencies, runs in any browser
 - ✅ **Cryptography** - ECDSA key generation, signing, address creation
+- ✅ **Message Signing** - Sign and verify messages for authentication and DApp integration
 - ✅ **Transaction Builder** - Build and sign transactions with automatic fee calculation
 - ✅ **REST API Client** - Connect to Hoosat proxy for balance, UTXOs, and submissions
 - ✅ **QR Code Generator** - Payment URIs and address QR codes
@@ -94,6 +95,36 @@ const paymentQR = await HoosatQR.generatePaymentQR({
 });
 ```
 
+### 5. Sign Messages (Authentication, DApp Integration)
+
+```typescript
+import { HoosatSigner } from 'hoosat-sdk-web';
+
+// Sign a message with your wallet
+const privateKey = wallet.privateKey.toString('hex');
+const message = 'Sign in to MyDApp\nTimestamp: ' + Date.now();
+const signature = HoosatSigner.signMessage(privateKey, message);
+
+// Verify the signature
+const publicKey = wallet.publicKey.toString('hex');
+const isValid = HoosatSigner.verifyMessage(signature, message, publicKey);
+console.log('Signature valid:', isValid);
+
+// Create a complete signed message object
+const signedMessage = HoosatSigner.createSignedMessage(
+  privateKey,
+  message,
+  wallet.address
+);
+// Returns: { message, signature, address, timestamp }
+
+// Verify signed message object
+const result = HoosatSigner.verifySignedMessage(signedMessage, publicKey);
+if (result.valid) {
+  console.log('Authenticated!');
+}
+```
+
 ## 📚 API Reference
 
 ### HoosatCrypto
@@ -117,6 +148,23 @@ const paymentQR = await HoosatQR.generatePaymentQR({
 - `calculateFee(inputCount, outputCount, feePerByte?)` - Estimate fee
 - `blake3Hash(data)` - BLAKE3 hash
 - `sha256Hash(data)` - SHA256 hash
+
+### HoosatSigner
+
+**Message Signing:**
+- `signMessage(privateKey, message)` - Sign message with ECDSA
+- `verifyMessage(signature, message, publicKey)` - Verify signature
+- `getPublicKey(privateKey, compressed?)` - Get public key from private key
+- `recoverPublicKey(signature, message, recoveryId?)` - Recover public key from signature
+
+**Signed Message Objects:**
+- `createSignedMessage(privateKey, message, address)` - Create complete signed message with metadata
+- `verifySignedMessage(signedMessage, publicKey)` - Verify signed message object
+
+**Utilities:**
+- `hashMessage(message)` - Hash message with BLAKE3 (includes prefix)
+- `formatMessage(message)` - Format message with Hoosat prefix
+- `MESSAGE_PREFIX` - Standard message prefix: "Hoosat Signed Message:\n"
 
 ### HoosatTxBuilder
 

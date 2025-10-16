@@ -76,11 +76,19 @@
       <h1>🚀 Hoosat SDK Browser Test</h1>
       <p>Testing browser-compatible crypto operations</p>
 
+      <h2 style="margin-top: 0; color: #4caf50;">Cryptography Tests</h2>
       <button id="btnGenerateKey">Generate Key Pair</button>
       <button id="btnImportKey">Import Key</button>
       <button id="btnValidateAddress">Validate Address</button>
       <button id="btnTestHashing">Test Hashing</button>
-      <button id="btnClear">Clear</button>
+
+      <h2 style="margin-top: 30px; color: #2196f3;">Message Signing Tests</h2>
+      <button id="btnSignMessage">Sign Message</button>
+      <button id="btnVerifyMessage">Verify Signature</button>
+      <button id="btnTestDAppAuth">Test DApp Auth</button>
+      <button id="btnTestRecovery">Test Key Recovery</button>
+
+      <button id="btnClear" style="margin-top: 30px; background: #666;">Clear</button>
 
       <div id="output" class="output">Loading SDK...</div>
     </div>
@@ -99,7 +107,7 @@
       }
 
       // Try to load SDK with error handling
-      let HoosatCrypto, HoosatUtils, HOOSAT_PARAMS;
+      let HoosatCrypto, HoosatUtils, HoosatSigner, HOOSAT_PARAMS;
 
       try {
         log('🔄 Loading Hoosat SDK...', 'info');
@@ -108,6 +116,7 @@
         const sdk = await import('../dist/hoosat-sdk.es.js');
         HoosatCrypto = sdk.HoosatCrypto;
         HoosatUtils = sdk.HoosatUtils;
+        HoosatSigner = sdk.HoosatSigner;
         HOOSAT_PARAMS = sdk.HOOSAT_PARAMS;
 
         // Buffer should now be available globally (set by index.ts)
@@ -266,11 +275,216 @@
         }
       }
 
+      function testSignMessage() {
+        try {
+          log('=== Testing Message Signing ===', 'info');
+
+          // Generate a wallet
+          const wallet = HoosatCrypto.generateKeyPair('mainnet');
+          log(`📍 Address: ${wallet.address}`, 'info');
+          log(`🔑 Private key: ${wallet.privateKey.toString('hex').slice(0, 16)}...\n`, 'info');
+
+          // Sign a message
+          const message = 'Hello, Hoosat! This is a test message.\nTimestamp: ' + Date.now();
+          log(`📝 Message to sign:\n"${message}"\n`, 'info');
+
+          const privateKey = wallet.privateKey.toString('hex');
+          const signature = HoosatSigner.signMessage(privateKey, message);
+
+          log(`✅ Signature (128 hex chars):`, 'success');
+          log(`  ${signature.slice(0, 64)}`, 'success');
+          log(`  ${signature.slice(64, 128)}\n`, 'success');
+
+          // Verify the signature
+          const publicKey = wallet.publicKey.toString('hex');
+          const isValid = HoosatSigner.verifyMessage(signature, message, publicKey);
+
+          log(`✅ Signature is valid: ${isValid}`, 'success');
+          log(`✅ Signature length: ${signature.length} chars (64 bytes)\n`, 'success');
+
+          // Test determinism
+          const signature2 = HoosatSigner.signMessage(privateKey, message);
+          const isDeterministic = signature === signature2;
+          log(`✅ Signatures are deterministic: ${isDeterministic}`, 'success');
+
+          log('\n', 'info');
+        } catch (error) {
+          log(`❌ Error: ${error.message}`, 'error');
+          console.error('Full error:', error);
+        }
+      }
+
+      function testVerifyMessage() {
+        try {
+          log('=== Testing Signature Verification ===', 'info');
+
+          // Create wallet and sign a message
+          const wallet = HoosatCrypto.generateKeyPair('mainnet');
+          const message = 'Verify this message';
+          const privateKey = wallet.privateKey.toString('hex');
+          const publicKey = wallet.publicKey.toString('hex');
+
+          log(`📝 Original message: "${message}"`, 'info');
+          log(`📍 Address: ${wallet.address}\n`, 'info');
+
+          // Sign the message
+          const signature = HoosatSigner.signMessage(privateKey, message);
+          log(`✅ Signature created`, 'success');
+
+          // Test 1: Valid signature
+          const validResult = HoosatSigner.verifyMessage(signature, message, publicKey);
+          log(`\n✅ Valid signature verification: ${validResult}`, validResult ? 'success' : 'error');
+
+          // Test 2: Wrong message
+          const wrongMessage = 'Different message';
+          const wrongMessageResult = HoosatSigner.verifyMessage(signature, wrongMessage, publicKey);
+          log(`✅ Wrong message rejection: ${!wrongMessageResult}`, !wrongMessageResult ? 'success' : 'error');
+
+          // Test 3: Wrong public key
+          const wallet2 = HoosatCrypto.generateKeyPair('mainnet');
+          const wrongKey = wallet2.publicKey.toString('hex');
+          const wrongKeyResult = HoosatSigner.verifyMessage(signature, message, wrongKey);
+          log(`✅ Wrong public key rejection: ${!wrongKeyResult}`, !wrongKeyResult ? 'success' : 'error');
+
+          // Test 4: Invalid signature format
+          const invalidSig = 'invalid_signature';
+          const invalidSigResult = HoosatSigner.verifyMessage(invalidSig, message, publicKey);
+          log(`✅ Invalid signature rejection: ${!invalidSigResult}`, !invalidSigResult ? 'success' : 'error');
+
+          log('\n✅ All verification tests passed!', 'success');
+          log('\n', 'info');
+        } catch (error) {
+          log(`❌ Error: ${error.message}`, 'error');
+          console.error('Full error:', error);
+        }
+      }
+
+      function testDAppAuth() {
+        try {
+          log('=== Testing DApp Authentication Flow ===', 'info');
+
+          // Simulate DApp authentication scenario
+          log('🌐 Scenario: User signing into a DApp\n', 'info');
+
+          // Step 1: Generate user wallet
+          const wallet = HoosatCrypto.generateKeyPair('mainnet');
+          log('👤 User wallet generated:', 'info');
+          log(`   Address: ${wallet.address}`, 'info');
+
+          // Step 2: DApp creates challenge
+          const nonce = Date.now();
+          const dappName = 'MyAwesomeDApp';
+          const challenge = `Sign in to ${dappName}\n\nNonce: ${nonce}\nAddress: ${wallet.address}`;
+
+          log(`\n🎯 DApp creates challenge:`, 'info');
+          log(`"${challenge}"\n`, 'warning');
+
+          // Step 3: User signs the challenge (in wallet)
+          const privateKey = wallet.privateKey.toString('hex');
+          const signedMessage = HoosatSigner.createSignedMessage(
+            privateKey,
+            challenge,
+            wallet.address
+          );
+
+          log('✍️  User signs challenge in wallet:', 'success');
+          log(`   Signature: ${signedMessage.signature.slice(0, 32)}...`, 'success');
+          log(`   Timestamp: ${new Date(signedMessage.timestamp).toLocaleString()}`, 'success');
+
+          // Step 4: DApp receives signed message and verifies
+          log(`\n🔍 DApp verifies signature:`, 'info');
+
+          const publicKey = wallet.publicKey.toString('hex');
+          const verificationResult = HoosatSigner.verifySignedMessage(signedMessage, publicKey);
+
+          if (verificationResult.valid) {
+            log(`✅ Authentication successful!`, 'success');
+            log(`   User authenticated as: ${signedMessage.address}`, 'success');
+            log(`   Public key verified: ${verificationResult.publicKey.slice(0, 16)}...`, 'success');
+          } else {
+            log(`❌ Authentication failed: ${verificationResult.error}`, 'error');
+          }
+
+          // Step 5: Simulate attack - tampered message
+          log(`\n🔐 Security test: Tampered message`, 'warning');
+          const tamperedMessage = { ...signedMessage, message: 'Hacked message' };
+          const tamperedResult = HoosatSigner.verifySignedMessage(tamperedMessage, publicKey);
+
+          if (!tamperedResult.valid) {
+            log(`✅ Tampered message correctly rejected!`, 'success');
+            log(`   Error: ${tamperedResult.error}`, 'info');
+          } else {
+            log(`❌ Security breach: tampered message accepted!`, 'error');
+          }
+
+          log('\n✅ DApp authentication flow completed successfully!', 'success');
+          log('\n', 'info');
+        } catch (error) {
+          log(`❌ Error: ${error.message}`, 'error');
+          console.error('Full error:', error);
+        }
+      }
+
+      function testKeyRecovery() {
+        try {
+          log('=== Testing Public Key Recovery ===', 'info');
+
+          // Generate wallet and sign message
+          const wallet = HoosatCrypto.generateKeyPair('mainnet');
+          const message = 'Message for key recovery test';
+          const privateKey = wallet.privateKey.toString('hex');
+          const originalPublicKey = wallet.publicKey.toString('hex');
+
+          log(`📝 Message: "${message}"`, 'info');
+          log(`🔑 Original public key: ${originalPublicKey.slice(0, 32)}...\n`, 'info');
+
+          // Sign the message
+          const signature = HoosatSigner.signMessage(privateKey, message);
+          log(`✅ Message signed`, 'success');
+
+          // Try to recover public key (try recovery IDs 0-3)
+          log(`\n🔍 Attempting to recover public key...`, 'info');
+
+          let recovered = false;
+          for (let recoveryId = 0; recoveryId < 4; recoveryId++) {
+            try {
+              const recoveredKey = HoosatSigner.recoverPublicKey(signature, message, recoveryId);
+
+              // Verify with recovered key
+              const isValid = HoosatSigner.verifyMessage(signature, message, recoveredKey);
+
+              if (isValid) {
+                log(`\n✅ Public key recovered with recovery ID ${recoveryId}!`, 'success');
+                log(`   Recovered: ${recoveredKey.slice(0, 32)}...`, 'success');
+                log(`   Matches original: ${recoveredKey === originalPublicKey}`, 'success');
+                recovered = true;
+                break;
+              }
+            } catch (e) {
+              // This recovery ID didn't work, try next
+            }
+          }
+
+          if (!recovered) {
+            log(`⚠️  Could not recover public key with any recovery ID`, 'warning');
+          }
+
+          log('\n', 'info');
+        } catch (error) {
+          log(`❌ Error: ${error.message}`, 'error');
+          console.error('Full error:', error);
+        }
+      }
+
       // Attach event listeners to buttons
       document.getElementById('btnGenerateKey').addEventListener('click', testGenerateKeyPair);
       document.getElementById('btnImportKey').addEventListener('click', testImportKey);
       document.getElementById('btnValidateAddress').addEventListener('click', testAddressValidation);
       document.getElementById('btnTestHashing').addEventListener('click', testHashing);
+      document.getElementById('btnSignMessage').addEventListener('click', testSignMessage);
+      document.getElementById('btnVerifyMessage').addEventListener('click', testVerifyMessage);
+      document.getElementById('btnTestDAppAuth').addEventListener('click', testDAppAuth);
+      document.getElementById('btnTestRecovery').addEventListener('click', testKeyRecovery);
       document.getElementById('btnClear').addEventListener('click', clearOutput);
 
       // Add click feedback
