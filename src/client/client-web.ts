@@ -240,8 +240,8 @@ export class HoosatWebClient {
    * const fees = await client.getFeeEstimate();
    * console.log(`Normal fee: ${fees.medium} sompi/byte`);
    *
-   * // Use with HoosatCrypto.calculateFee()
-   * const fee = HoosatCrypto.calculateFee(inputCount, outputCount, fees.medium);
+   * // Use with HoosatCrypto.calculateMinFee()
+   * const fee = HoosatCrypto.calculateMinFee(inputCount, outputCount);
    * ```
    */
   async getFeeEstimate(): Promise<FeeRecommendation> {

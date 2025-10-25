@@ -307,14 +307,14 @@ export class HoosatTxBuilder {
   }
 
   /**
-   * Estimates transaction fee based on inputs/outputs count
-   * @param feePerByte - Fee rate in sompi per byte (default: 1)
-   * @returns Estimated fee as string
+   * Estimates minimum transaction fee based on inputs/outputs count
+   * @param payloadSize - Payload size in bytes (default: 0)
+   * @returns Minimum fee as string
    * @example
    * const fee = builder.estimateFee();
    */
-  estimateFee(feePerByte: number = HOOSAT_PARAMS.DEFAULT_FEE_PER_BYTE): string {
-    return HoosatCrypto.calculateFee(this._inputs.length, this._outputs.length, feePerByte);
+  estimateFee(payloadSize: number = 0): string {
+    return HoosatCrypto.calculateMinFee(this._inputs.length, this._outputs.length, payloadSize);
   }
 
   /**

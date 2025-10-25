@@ -269,7 +269,7 @@ export class HoosatCrypto {
   // ==================== TRANSACTION UTILITIES ====================
 
   /**
-   * Calculates recommended transaction fee using MASS-BASED calculation
+   * Calculate minimum transaction fee using MASS-based calculation
    * Based on HTND implementation (util\txmass\calculator.go)
    *
    * Formula:
@@ -277,20 +277,25 @@ export class HoosatCrypto {
    * 2. massForSize = size × 1
    * 3. massForScriptPubKey = (outputs × scriptPubKeySize) × 10
    * 4. massForSigOps = inputs × 1000
-   * 5. totalMass = massForSize + massForScriptPubKey + massForSigOps
-   * 6. fee = (totalMass × minimumRelayTxFee) / 1000
-   *    where minimumRelayTxFee = 1000, so fee = totalMass
+   * 5. massForPayload = payloadSize × 1
+   * 6. totalMass = massForSize + massForScriptPubKey + massForSigOps + massForPayload
+   * 7. fee = totalMass (minimumRelayTxFee = 1)
    *
    * @param inputCount - Number of inputs
    * @param outputCount - Number of outputs
-   * @param feeRate - Fee rate in sompi/gram (default: 1)
+   * @param payloadSize - Payload size in bytes (default: 0, for future subnetwork usage)
    * @returns Fee amount in sompi as string
    *
    * @example
-   * const fee = HoosatCrypto.calculateFee(5, 2, 1);
-   * // Returns: "7170" (for 5 inputs, 2 outputs at 1 sompi/gram)
+   * const fee = HoosatCrypto.calculateMinFee(5, 2);
+   * // Returns: "6653" (for 5 inputs, 2 outputs)
+   *
+   * @example
+   * // With payload
+   * const fee = HoosatCrypto.calculateMinFee(5, 2, 256);
+   * // Returns: "6909" (for 5 inputs, 2 outputs, 256 byte payload)
    */
-  static calculateFee(inputCount: number, outputCount: number, feeRate: number = HOOSAT_PARAMS.DEFAULT_FEE_PER_BYTE): string {
+  static calculateMinFee(inputCount: number, outputCount: number, payloadSize: number = 0): string {
     // 1. Calculate full transaction size (including inputs AND outputs)
     const txSize = HOOSAT_MASS.BaseTxOverhead + inputCount * HOOSAT_MASS.EstimatedInputSize + outputCount * HOOSAT_MASS.EstimatedOutputSize;
 
@@ -302,13 +307,15 @@ export class HoosatCrypto {
     const massForSize = txSize * HOOSAT_MASS.MassPerTxByte;
     const massForScriptPubKey = scriptPubKeySize * HOOSAT_MASS.MassPerScriptPubKeyByte;
     const massForSigOps = inputCount * HOOSAT_MASS.MassPerSigOp;
-    const totalMass = massForSize + massForScriptPubKey + massForSigOps;
 
-    // 4. Calculate fee: (mass × minimumRelayTxFee) / 1000
-    // where minimumRelayTxFee = 1000, so: fee = mass × feeRate
-    const fee = totalMass * feeRate;
+    // 4. Add payload mass if present
+    const massForPayload = payloadSize * HOOSAT_MASS.MassPerTxByte;
 
-    return fee.toString();
+    // 5. Calculate total mass
+    const totalMass = massForSize + massForScriptPubKey + massForSigOps + massForPayload;
+
+    // 6. Fee = totalMass (minimumRelayTxFee = 1)
+    return totalMass.toString();
   }
 
   // ==================== TRANSACTION SIGNING ====================
