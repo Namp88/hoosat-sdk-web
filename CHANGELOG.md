@@ -2,6 +2,8 @@
 
 All notable changes to this project will be documented in this file.
 
+### [0.1.5](https://github.com/Namp88/hoosat-sdk/compare/v0.1.4...v0.1.5) (2025-10-25)
+
 ### [0.1.4](https://github.com/Namp88/hoosat-sdk/compare/v0.1.3...v0.1.4) (2025-10-16)
 
 ### ✨ Features
