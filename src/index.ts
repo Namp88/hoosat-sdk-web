@@ -34,6 +34,20 @@ export type {
 } from '@client/client-web.types';
 export { PriorityFee } from '@client/client-web.types';
 
+export {
+  type ApiProvider,
+  type ProviderConfig,
+  type EndpointConfig,
+  BaseProvider,
+  HoosatProxyProvider,
+  HoosatNetworkProvider,
+  MultiProvider,
+  type MultiProviderConfig,
+  createHoosatProxyProvider,
+  createHoosatNetworkProvider,
+  createMultiProvider,
+} from '@client/providers';
+
 export { HoosatTxBuilder } from '@transaction/tx-builder';
 export type { TxBuilderOptions } from '@transaction/tx-builder.types';
 
