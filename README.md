@@ -10,11 +10,13 @@
 - ✅ **Browser-native** - No Node.js dependencies, runs in any browser
 - ✅ **Cryptography** - ECDSA key generation, signing, address creation
 - ✅ **Message Signing** - Sign and verify messages for authentication and DApp integration
-- ✅ **Transaction Builder** - Build and sign transactions with automatic fee calculation
-- ✅ **REST API Client** - Connect to Hoosat proxy for balance, UTXOs, and submissions
+- ✅ **Transaction Builder** - Build and sign transactions with automatic fee calculation and payload support
+- ✅ **Extensible API Providers** - Multiple providers with failover, load balancing, and custom strategies
+- ✅ **REST API Client** - Connect to Hoosat proxy or network.hoosat.fi for balance, UTXOs, and submissions
+- ✅ **Payload Utilities** - Encode/decode transaction payloads for voting, mining data, and custom applications
 - ✅ **QR Code Generator** - Payment URIs and address QR codes
 - ✅ **TypeScript** - Full type safety with comprehensive types
-- ✅ **Lightweight** - ~150KB gzipped
+- ✅ **Lightweight** - ~180KB gzipped
 
 ## 📦 Installation
 
@@ -125,6 +127,83 @@ if (result.valid) {
 }
 ```
 
+## 🔌 API Provider Architecture
+
+The SDK now supports **extensible API providers** with multiple implementations and strategies. This allows you to connect to different backends with automatic failover and load balancing.
+
+### Available Providers
+
+#### HoosatProxyProvider
+Connect to proxy.hoosat.net REST API:
+```typescript
+import { createHoosatProxyProvider } from 'hoosat-sdk-web';
+
+const provider = createHoosatProxyProvider('https://proxy.hoosat.net/api/v1', {
+  timeout: 30000,
+  debug: false
+});
+
+// Use directly or pass to HoosatWebClient
+const client = new HoosatWebClient({ provider });
+```
+
+#### HoosatNetworkProvider
+Connect to network.hoosat.fi API:
+```typescript
+import { createHoosatNetworkProvider } from 'hoosat-sdk-web';
+
+const provider = createHoosatNetworkProvider('https://network.hoosat.fi/api', {
+  timeout: 30000
+});
+```
+
+#### MultiProvider (Failover & Load Balancing)
+Combine multiple providers with automatic failover and load balancing strategies:
+
+```typescript
+import {
+  createMultiProvider,
+  createHoosatProxyProvider,
+  createHoosatNetworkProvider
+} from 'hoosat-sdk-web';
+
+// Create providers
+const proxy = createHoosatProxyProvider('https://proxy.hoosat.net/api/v1');
+const network = createHoosatNetworkProvider('https://network.hoosat.fi/api');
+
+// Combine with failover strategy (default)
+const multiProvider = createMultiProvider([proxy, network], 'failover');
+
+// Or use fastest-response strategy
+const fastProvider = createMultiProvider([proxy, network], 'fastest');
+
+// Or round-robin for load balancing
+const balancedProvider = createMultiProvider([proxy, network], 'round-robin');
+
+// Use with client
+const client = new HoosatWebClient({ provider: multiProvider });
+```
+
+### Strategies
+
+1. **Failover (default)** - Use primary provider, switch to backup on failure
+2. **Fastest** - Race all providers, use the fastest response
+3. **Round-robin** - Distribute requests evenly across providers
+
+### Backward Compatibility
+
+Existing code continues to work without changes:
+```typescript
+// Legacy way (still works)
+const client = new HoosatBrowserClient({
+  baseUrl: 'https://proxy.hoosat.net/api/v1'
+});
+
+// New way (recommended)
+const provider = createHoosatProxyProvider('https://proxy.hoosat.net/api/v1');
+const client = new HoosatWebClient({ provider });
+```
+
 ## 📚 API Reference
 
 ### HoosatCrypto
@@ -174,11 +253,15 @@ if (result.valid) {
 - `addChangeOutput(address)` - Add change automatically
 - `setFee(fee)` - Set transaction fee
 - `setLockTime(lockTime)` - Set lock time
+- `setSubnetworkId(subnetworkId)` - Set custom subnetwork (for payload support)
+- `setPayload(hexPayload)` - Add payload data to transaction
 
 **Info:**
 - `getTotalInputAmount()` - Total input value
 - `getTotalOutputAmount()` - Total output value
 - `estimateFee(feePerByte?)` - Estimate fee
+- `getInputCount()` - Number of inputs
+- `getOutputCount()` - Number of outputs
 
 **Execution:**
 - `build()` - Build unsigned transaction
@@ -235,6 +318,72 @@ new HoosatBrowserClient({
 **Conversion:**
 - `hexToBuffer(hex)` - Convert hex to Buffer
 - `bufferToHex(buffer)` - Convert Buffer to hex
+
+**Payload Encoding/Decoding:**
+- `decodePayload(hexPayload)` - Decode hex payload to UTF-8 string
+- `parsePayloadAsJson<T>(hexPayload)` - Decode and parse payload as JSON
+- `encodePayload(payload)` - Encode UTF-8 string to hex payload
+- `encodePayloadAsJson(data)` - Encode JSON object to hex payload
+- `isJsonPayload(hexPayload)` - Check if payload is valid JSON
+- `decodePayloadSafe(hexPayload)` - Safe decode with metadata (fallback for invalid UTF-8)
+
+**Example - Decode Vote Transaction Payload:**
+```typescript
+import { HoosatUtils } from 'hoosat-sdk-web';
+
+// Decode vote payload from transaction
+const voteHex = '7b2274797065223a22766f7465227d';
+const voteData = HoosatUtils.parsePayloadAsJson(voteHex);
+console.log('Vote type:', voteData.type); // 'vote'
+
+// Encode data for payload transaction
+const pollData = {
+  type: 'poll_create',
+  title: 'New Poll',
+  options: ['Yes', 'No']
+};
+const hexPayload = HoosatUtils.encodePayloadAsJson(pollData);
+
+// Safe decode with validation
+const safe = HoosatUtils.decodePayloadSafe(someHex);
+if (safe.isJson) {
+  const data = JSON.parse(safe.decoded);
+  console.log('JSON payload:', data);
+} else if (safe.isValidUtf8) {
+  console.log('Text payload:', safe.decoded);
+} else {
+  console.log('Binary payload:', safe.raw);
+}
+```
+
+### HoosatTxBuilder (Payload Support)
+
+**New in v0.1.6:**
+- `setSubnetworkId(subnetworkId)` - Set custom subnetwork (required for payload transactions)
+- `setPayload(hexPayload)` - Add payload data to transaction
+
+**Example - Build Payload Transaction:**
+```typescript
+import { HoosatTxBuilder, HoosatUtils } from 'hoosat-sdk-web';
+
+const voteData = {
+  type: 'vote_cast',
+  pollId: '123',
+  vote: 1
+};
+
+const builder = new HoosatTxBuilder();
+builder
+  .addInput(utxo, privateKey)
+  .addOutput('hoosat:platform_address...', '100000000')
+  .setFee('2500')
+  .setSubnetworkId('0300000000000000000000000000000000000000') // Payload subnetwork
+  .setPayload(HoosatUtils.encodePayloadAsJson(voteData))
+  .addChangeOutput(wallet.address);
+
+const signedTx = builder.sign();
+await client.submitTransaction(signedTx);
+```
 
 ### HoosatQR
 
