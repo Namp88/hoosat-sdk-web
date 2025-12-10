@@ -2,6 +2,20 @@
 
 All notable changes to this project will be documented in this file.
 
+### [0.1.7](https://github.com/Namp88/hoosat-sdk/compare/v0.1.6...v0.1.7) (2025-12-10)
+
+### ✨ Features
+
+- implement extensible API provider architecture ([f922e47](https://github.com/Namp88/hoosat-sdk/commit/f922e47df4c22430fe0e9f2e24f714b8423b5b87))
+
+### 🐛 Bug Fixes
+
+- update tests to use calculateMinFee instead of calculateFee ([db7bfdf](https://github.com/Namp88/hoosat-sdk/commit/db7bfdf3b7f9b00af6c187277f3e8e07f1a92d0e))
+
+### 📝 Documentation
+
+- add API provider architecture and payload support to README ([c12573e](https://github.com/Namp88/hoosat-sdk/commit/c12573e1571de86e3a613508b1bf8ab5df62690f))
+
 ### [0.1.6](https://github.com/Namp88/hoosat-sdk/compare/v0.1.5...v0.1.6) (2025-12-10)
 
 ### ✨ Features
