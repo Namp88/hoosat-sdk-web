@@ -615,7 +615,7 @@ describe('HoosatCrypto', () => {
 
   describe('Fee Calculation', () => {
     it('should calculate fee for simple transaction', () => {
-      const fee = HoosatCrypto.calculateFee(1, 2); // 1 input, 2 outputs
+      const fee = HoosatCrypto.calculateMinFee(1, 2); // 1 input, 2 outputs
 
       expect(fee).toBeTruthy();
       expect(typeof fee).toBe('string');
@@ -623,7 +623,7 @@ describe('HoosatCrypto', () => {
     });
 
     it('should respect minimum fee threshold', () => {
-      const fee = HoosatCrypto.calculateFee(1, 1, 1); // Minimal transaction
+      const fee = HoosatCrypto.calculateMinFee(1, 1); // Minimal transaction
       const feeValue = parseInt(fee);
 
       // Fee should be at least reasonable minimum (allow some flexibility)
@@ -631,15 +631,15 @@ describe('HoosatCrypto', () => {
       expect(feeValue).toBeLessThan(10000);
     });
 
-    it('should use default fee rate when not specified', () => {
-      const feeDefault = HoosatCrypto.calculateFee(1, 2);
-      const feeExplicit = HoosatCrypto.calculateFee(1, 2, 1); // DEFAULT_FEE_PER_BYTE = 1
+    it('should calculate fee with payload', () => {
+      const feeNoPayload = HoosatCrypto.calculateMinFee(1, 2, 0);
+      const feeWithPayload = HoosatCrypto.calculateMinFee(1, 2, 256); // 256 byte payload
 
-      expect(feeDefault).toBe(feeExplicit);
+      expect(parseInt(feeWithPayload)).toBeGreaterThan(parseInt(feeNoPayload));
     });
 
     it('should return fee as string', () => {
-      const fee = HoosatCrypto.calculateFee(2, 2, 5);
+      const fee = HoosatCrypto.calculateMinFee(2, 2, 0);
 
       expect(typeof fee).toBe('string');
       expect(/^\d+$/.test(fee)).toBe(true); // Valid integer string
