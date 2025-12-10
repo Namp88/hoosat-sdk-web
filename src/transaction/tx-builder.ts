@@ -24,6 +24,8 @@ export class HoosatTxBuilder {
   private _outputs: TransactionOutput[] = [];
   private _lockTime = '0';
   private _fee = '1000';
+  private _subnetworkId = '0000000000000000000000000000000000000000';
+  private _payload = '';
   private _reusedValues: SighashReusedValues = {};
   private _debug: boolean;
 
@@ -187,6 +189,78 @@ export class HoosatTxBuilder {
   }
 
   /**
+   * Sets subnetwork ID for the transaction
+   *
+   * ⚠️ Payload is disabled on the native subnetwork (0x00...00) until hardfork.
+   * Alternative subnetwork IDs may allow payload before the hardfork.
+   *
+   * @param subnetworkId - Subnetwork ID as hex string (40 chars, 20 bytes)
+   * @returns This builder instance for chaining
+   * @throws Error if subnetworkId format is invalid
+   *
+   * @example
+   * // Use alternative subnetwork that may support payload
+   * builder.setSubnetworkId('0300000000000000000000000000000000000000');
+   *
+   * @example
+   * // Use native subnetwork (default)
+   * builder.setSubnetworkId('0000000000000000000000000000000000000000');
+   */
+  setSubnetworkId(subnetworkId: string): this {
+    // Remove 0x prefix if present
+    const cleanId = subnetworkId.toLowerCase().replace(/^0x/, '');
+
+    if (!/^[0-9a-f]{40}$/.test(cleanId)) {
+      throw new Error(
+        `Invalid subnetwork ID format: ${subnetworkId}. ` +
+        `Expected 40 hex characters (20 bytes), e.g., "0300000000000000000000000000000000000000"`
+      );
+    }
+
+    this._subnetworkId = cleanId;
+    return this;
+  }
+
+  /**
+   * Sets payload data for the transaction
+   *
+   * ⚠️ Payload is disabled on the native subnetwork (0x00...00) until hardfork.
+   * Use alternative subnetwork IDs to test payload functionality.
+   *
+   * @param payload - Payload data as hex string or Buffer
+   * @returns This builder instance for chaining
+   *
+   * @example
+   * // Set payload as hex string
+   * builder.setPayload('48656c6c6f20576f726c64'); // "Hello World"
+   *
+   * @example
+   * // Set payload from Buffer
+   * const data = Buffer.from('Hello World', 'utf-8');
+   * builder.setPayload(data.toString('hex'));
+   *
+   * @example
+   * // With alternative subnetwork
+   * builder
+   *   .setSubnetworkId('0300000000000000000000000000000000000000')
+   *   .setPayload('48656c6c6f');
+   */
+  setPayload(payload: string): this {
+    // Remove 0x prefix if present
+    const cleanPayload = payload.toLowerCase().replace(/^0x/, '');
+
+    if (cleanPayload.length > 0 && !/^[0-9a-f]*$/.test(cleanPayload)) {
+      throw new Error(
+        `Invalid payload format: ${payload}. ` +
+        `Expected hex string, e.g., "48656c6c6f"`
+      );
+    }
+
+    this._payload = cleanPayload;
+    return this;
+  }
+
+  /**
    * Builds unsigned transaction
    * @returns Unsigned transaction object
    * @throws Error if validation fails
@@ -216,9 +290,9 @@ export class HoosatTxBuilder {
       })),
       outputs: this._outputs,
       lockTime: this._lockTime,
-      subnetworkId: '0000000000000000000000000000000000000000',
+      subnetworkId: this._subnetworkId,
       gas: '0',
-      payload: '',
+      payload: this._payload,
       fee: this._fee,
     };
   }
@@ -364,6 +438,8 @@ export class HoosatTxBuilder {
     this._outputs = [];
     this._fee = '1000';
     this._lockTime = '0';
+    this._subnetworkId = '0000000000000000000000000000000000000000';
+    this._payload = '';
     this._reusedValues = {};
     return this;
   }
