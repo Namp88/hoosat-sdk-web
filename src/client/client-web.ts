@@ -1,127 +1,71 @@
 import type {
-  ApiResponse,
   AddressBalance,
   AddressUtxos,
   TransactionSubmission,
   NetworkInfo,
   FeeRecommendation,
   BrowserClientConfig,
-  RequestOptions,
 } from './client-web.types';
 import type { Transaction } from '@models/transaction.types';
+import type { ApiProvider } from './providers/api-provider.interface';
+import { HoosatProxyProvider } from './providers/hoosat-proxy-provider';
+import type { MultiProvider } from './providers/multi-provider';
 
 /**
  * HoosatWebClient - REST API client for browser-based Hoosat applications
  *
- * Provides methods to interact with Hoosat blockchain via REST API proxy.
+ * Now supports multiple API providers with automatic fallback and extensible architecture.
  * All methods return promises and handle errors gracefully.
  *
  * @example
  * ```typescript
+ * // Using single provider (backward compatible)
  * const client = new HoosatWebClient({
  *   baseUrl: 'https://proxy.hoosat.net/api/v1',
  *   timeout: 30000
  * });
  *
- * // Get balance
- * const balance = await client.getBalance('hoosat:qz7ulu...');
- * console.log(`Balance: ${balance.balance} sompi`);
+ * // Using custom provider
+ * const customProvider = new HoosatProxyProvider({ baseUrl: 'https://proxy.hoosat.net/api/v1' });
+ * const client = new HoosatWebClient({ provider: customProvider });
  *
- * // Get UTXOs for transaction
- * const utxos = await client.getUtxos('hoosat:qz7ulu...');
+ * // Using multiple providers with fallback
+ * const multiProvider = new MultiProvider({
+ *   providers: [proxyProvider, networkProvider],
+ *   strategy: 'failover'
+ * });
+ * const client = new HoosatWebClient({ provider: multiProvider });
  * ```
  */
 export class HoosatWebClient {
-  private readonly _baseUrl: string;
-  private readonly _timeout: number;
-  private readonly _headers: Record<string, string>;
-  private readonly _debug: boolean;
+  private readonly provider: ApiProvider;
 
   /**
    * Creates a new HoosatWebClient instance
    *
    * @param config - Client configuration
-   * @param config.baseUrl - Base URL of the API (e.g., 'https://proxy.hoosat.net/api/v1')
+   * @param config.baseUrl - Base URL of the API (backward compatibility)
+   * @param config.provider - Custom API provider instance
    * @param config.timeout - Request timeout in milliseconds (default: 30000)
    * @param config.headers - Additional headers to include in requests
    * @param config.debug - Enable debug logging (default: false)
    */
-  constructor(config: BrowserClientConfig) {
-    this._baseUrl = config.baseUrl.replace(/\/$/, ''); // Remove trailing slash
-    this._timeout = config.timeout || 30000;
-    this._headers = {
-      'Content-Type': 'application/json',
-      ...config.headers,
-    };
-    this._debug = config.debug || false;
-  }
-
-  // ==================== PRIVATE HELPERS ====================
-
-  /**
-   * Make HTTP request with timeout and error handling
-   * @private
-   */
-  private async request<T>(endpoint: string, options: RequestInit & RequestOptions = {}): Promise<T> {
-    const url = `${this._baseUrl}${endpoint}`;
-    const timeout = options.timeout || this._timeout;
-
-    if (this._debug) {
-      console.log(`[HoosatWebClient] ${options.method || 'GET'} ${url}`);
-      if (options.body) {
-        console.log('[HoosatWebClient] Request body:', options.body);
-      }
-    }
-
-    // Create abort controller for timeout
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), timeout);
-
-    try {
-      const response = await fetch(url, {
-        ...options,
-        headers: {
-          ...this._headers,
-          ...options.headers,
-        },
-        signal: controller.signal,
+  constructor(config: BrowserClientConfig & { provider?: ApiProvider }) {
+    if (config.provider) {
+      this.provider = config.provider;
+    } else if (config.baseUrl) {
+      this.provider = new HoosatProxyProvider({
+        baseUrl: config.baseUrl,
+        timeout: config.timeout,
+        headers: config.headers,
+        debug: config.debug,
       });
-
-      clearTimeout(timeoutId);
-
-      // Parse response
-      const data: ApiResponse<T> = (await response.json()) as ApiResponse<T>;
-
-      if (this._debug) {
-        console.log('[HoosatWebClient] Response:', data);
-      }
-
-      // Check API response format
-      if (!data.success) {
-        throw new Error(data.error || 'API request failed');
-      }
-
-      if (!data.data) {
-        throw new Error('API response missing data field');
-      }
-
-      return data.data;
-    } catch (error: any) {
-      clearTimeout(timeoutId);
-
-      if (error.name === 'AbortError') {
-        throw new Error(`Request timeout after ${timeout}ms`);
-      }
-
-      if (this._debug) {
-        console.error('[HoosatWebClient] Error:', error);
-      }
-
-      throw error;
+    } else {
+      throw new Error('Either baseUrl or provider must be specified');
     }
   }
 
-  // ==================== ADDRESS METHODS ====================
+  // ==================== PUBLIC API METHODS ====================
 
   /**
    * Get balance for a Hoosat address
@@ -137,7 +81,7 @@ export class HoosatWebClient {
    * ```
    */
   async getBalance(address: string): Promise<AddressBalance> {
-    return this.request<AddressBalance>(`/address/${address}/balance`);
+    return this.provider.getBalance(address);
   }
 
   /**
@@ -160,31 +104,8 @@ export class HoosatWebClient {
    * ```
    */
   async getUtxos(addresses: string[]): Promise<AddressUtxos> {
-    const response = await this.request<any>('/address/utxos', {
-      method: 'POST',
-      body: JSON.stringify({ addresses }),
-    });
-
-    // Adapt API response to TxBuilder format
-    // API returns: scriptPublicKey.scriptPublicKey
-    // TxBuilder expects: scriptPublicKey.script
-    if (response.utxos) {
-      response.utxos = response.utxos.map((utxo: any) => ({
-        ...utxo,
-        utxoEntry: {
-          ...utxo.utxoEntry,
-          scriptPublicKey: {
-            version: utxo.utxoEntry.scriptPublicKey.version,
-            script: utxo.utxoEntry.scriptPublicKey.scriptPublicKey, // Rename field
-          },
-        },
-      }));
-    }
-
-    return response;
+    return this.provider.getUtxos(addresses);
   }
-
-  // ==================== TRANSACTION METHODS ====================
 
   /**
    * Submit a signed transaction to the network
@@ -205,13 +126,8 @@ export class HoosatWebClient {
    * ```
    */
   async submitTransaction(transaction: Transaction): Promise<TransactionSubmission> {
-    return this.request<TransactionSubmission>('/transaction/submit', {
-      method: 'POST',
-      body: JSON.stringify(transaction),
-    });
+    return this.provider.submitTransaction(transaction);
   }
-
-  // ==================== NETWORK METHODS ====================
 
   /**
    * Get network information
@@ -227,7 +143,7 @@ export class HoosatWebClient {
    * ```
    */
   async getNetworkInfo(): Promise<NetworkInfo> {
-    return this.request<NetworkInfo>('/node/info');
+    return this.provider.getNetworkInfo();
   }
 
   /**
@@ -245,7 +161,7 @@ export class HoosatWebClient {
    * ```
    */
   async getFeeEstimate(): Promise<FeeRecommendation> {
-    return this.request<FeeRecommendation>('/mempool/fee-estimate');
+    return this.provider.getFeeEstimate();
   }
 
   // ==================== UTILITY METHODS ====================
@@ -264,25 +180,15 @@ export class HoosatWebClient {
    * ```
    */
   async ping(): Promise<boolean> {
-    try {
-      await this.getNetworkInfo();
-      return true;
-    } catch (error) {
-      return false;
-    }
+    return this.provider.ping();
   }
 
   /**
-   * Get current configuration
+   * Get the current API provider instance
    *
-   * @returns Client configuration
+   * @returns Current provider
    */
-  getConfig(): BrowserClientConfig {
-    return {
-      baseUrl: this._baseUrl,
-      timeout: this._timeout,
-      headers: { ...this._headers },
-      debug: this._debug,
-    };
+  getProvider(): ApiProvider {
+    return this.provider;
   }
 }

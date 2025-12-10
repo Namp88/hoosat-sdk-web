@@ -227,10 +227,10 @@
     </div>
 
     <script type="module">
-      import { HoosatCrypto, HoosatUtils, HoosatTxBuilder, HoosatBrowserClient } from '../dist/hoosat-sdk.es.js';
+      import { HoosatCrypto, HoosatUtils, HoosatTxBuilder, HoosatWebClient } from '../dist/hoosat-sdk.es.js';
 
       // Initialize API client
-      const client = new HoosatBrowserClient({
+      const client = new HoosatWebClient({
         baseUrl: 'https://proxy.hoosat.net/api/v1',
         timeout: 30000,
         debug: true,
@@ -359,7 +359,7 @@
           builder.addOutput(recipient, amountSompi);
 
           // Calculate fee
-          const estimatedFee = HoosatCrypto.calculateFee(
+          const estimatedFee = HoosatCrypto.calculateMinFee(
             utxosResult.utxos.length,
             2 // recipient + change
           );
@@ -391,20 +391,19 @@
           logMessage('🌐 Fetching network info...', 'info');
 
           const info = await client.getNetworkInfo();
-          const tip = await client.getBlockTip();
 
           document.getElementById('networkInfo').innerHTML = `
                     <div class="wallet-info">
-                        <label>Network</label>
-                        <div class="value">${info.networkName}</div>
+                        <label>Server Version</label>
+                        <div class="value">${info.serverVersion}</div>
                     </div>
                     <div class="wallet-info">
-                        <label>Block Height</label>
-                        <div class="value">${info.blockCount}</div>
+                        <label>Mempool Size</label>
+                        <div class="value">${info.mempoolSize}</div>
                     </div>
                     <div class="wallet-info">
-                        <label>Latest Block Hash</label>
-                        <div class="value">${tip.hash}</div>
+                        <label>P2P ID</label>
+                        <div class="value">${info.p2pId}</div>
                     </div>
                     <div class="wallet-info">
                         <label>Synced</label>
