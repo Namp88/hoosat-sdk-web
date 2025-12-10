@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+### [0.1.6](https://github.com/Namp88/hoosat-sdk/compare/v0.1.5...v0.1.6) (2025-12-10)
+
+### ✨ Features
+
+- add setSubnetworkId and setPayload methods to transaction builder ([37d26d8](https://github.com/Namp88/hoosat-sdk/commit/37d26d898b6a06a7610feca873aa54db7c4902be))
+
 ### [0.1.5](https://github.com/Namp88/hoosat-sdk/compare/v0.1.4...v0.1.5) (2025-10-25)
 
 ### [0.1.4](https://github.com/Namp88/hoosat-sdk/compare/v0.1.3...v0.1.4) (2025-10-16)
